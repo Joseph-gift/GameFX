@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.geometry.Insets?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:id="rootPane"
+           fx:controller="com.example.gamefx.IntroductionController"
+           stylesheets="@style.css"
+           styleClass="root-pane"
+           prefWidth="900" prefHeight="550">
+
+    <BorderPane>
+
+        <center>
+            <VBox alignment="CENTER" styleClass="background-area">
+                <Label text="BRIEFING" styleClass="title-label"/>
+            </VBox>
+        </center>
+
+        <bottom>
+            <VBox styleClass="dialogue-container" spacing="8">
+                <HBox spacing="20" alignment="CENTER_LEFT">
+
+                    <VBox alignment="TOP_LEFT" HBox.hgrow="ALWAYS" spacing="6">
+                        <Label fx:id="speakerLabel" styleClass="speaker-label"/>
+                        <Label fx:id="dialogueLabel" styleClass="dialogue-label" wrapText="true"
+                               maxWidth="680"/>
+                    </VBox>
+
+                    <ImageView fx:id="characterImage" fitWidth="110" fitHeight="110"
+                               preserveRatio="true"/>
+                </HBox>
+
+                <Region prefHeight="4"/>
+
+                <Label fx:id="continueLabel"
+                       text="Appuyez sur ESPACE pour continuer..."
+                       styleClass="continue-label"/>
+            </VBox>
+        </bottom>
+
+    </BorderPane>
+</StackPane>

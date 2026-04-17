@@ -1,0 +1,46 @@
+.root-pane {
+    -fx-background-color: #1a1a2e;
+}
+
+.background-area {
+    -fx-padding: 30;
+}
+
+.title-label {
+    -fx-text-fill: #e0e0e0;
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Consolas";
+    -fx-opacity: 0.2;
+}
+
+/* --- Dialogue box (bottom) --- */
+
+.dialogue-container {
+    -fx-background-color: #16213e;
+    -fx-border-color: #0f3460;
+    -fx-border-width: 2 0 0 0;
+    -fx-padding: 18 30 12 30;
+}
+
+.speaker-label {
+    -fx-text-fill: #e94560;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Consolas";
+}
+
+.dialogue-label {
+    -fx-text-fill: #eaeaea;
+    -fx-font-size: 15px;
+    -fx-font-family: "Consolas";
+    -fx-line-spacing: 4;
+    -fx-min-height: 70;
+}
+
+.continue-label {
+    -fx-text-fill: #555577;
+    -fx-font-size: 12px;
+    -fx-font-family: "Consolas";
+    -fx-font-style: italic;
+}
