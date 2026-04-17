@@ -10,6 +10,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class IntroductionController {
     @FXML private Label speakerLabel;
     @FXML private Label dialogueLabel;
     @FXML private Label continueLabel;
+    @FXML private Button quitButton;
     @FXML private ImageView characterImage;
     @FXML private VBox quizContainer;
     @FXML private Label quizQuestionLabel;
@@ -67,6 +69,7 @@ public class IntroductionController {
     public void initialize() {
         loadCharacterImage();
         initializeQuiz();
+        setQuitButtonVisible(false);
         continueLabel.setVisible(false);
 
         rootPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
@@ -176,6 +179,7 @@ public class IntroductionController {
         speakerLabel.setText("");
         dialogueLabel.setText("");
         continueLabel.setVisible(false);
+        setQuitButtonVisible(false);
         setQuizVisible(true);
         setAnswerButtonsDisabled(false);
     }
@@ -218,6 +222,14 @@ public class IntroductionController {
         }
         continueLabel.setText("Appuyez sur ESPACE pour commencer la mission...");
         continueLabel.setVisible(true);
+        setQuitButtonVisible(true);
+    }
+
+    @FXML
+    private void onQuit() {
+        if (rootPane.getScene() != null && rootPane.getScene().getWindow() instanceof Stage stage) {
+            stage.close();
+        }
     }
 
     private void setQuizVisible(boolean visible) {
@@ -232,9 +244,15 @@ public class IntroductionController {
         answerKakiButton.setDisable(disabled);
     }
 
+    private void setQuitButtonVisible(boolean visible) {
+        quitButton.setVisible(visible);
+        quitButton.setManaged(visible);
+    }
+
     private void startGame() {
         gameStarted = true;
         missionReady = false;
+        setQuitButtonVisible(false);
         System.out.println("Lancement du jeu !");
     }
 

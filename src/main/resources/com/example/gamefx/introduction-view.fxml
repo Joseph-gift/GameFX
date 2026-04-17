@@ -72,6 +72,12 @@
                 <Label fx:id="continueLabel"
                        text="Appuyez sur ESPACE pour continuer..."
                        styleClass="continue-label"/>
+                <Button fx:id="quitButton"
+                        text="Quitter"
+                        styleClass="quit-button"
+                        onAction="#onQuit"
+                        visible="false"
+                        managed="false"/>
             </VBox>
         </bottom>
 
