@@ -14,6 +14,36 @@
     -fx-opacity: 0.2;
 }
 
+.quiz-container {
+    -fx-background-color: #16213e;
+    -fx-border-color: #0f3460;
+    -fx-border-width: 2;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-padding: 20;
+}
+
+.quiz-question-label {
+    -fx-text-fill: #eaeaea;
+    -fx-font-size: 18px;
+    -fx-font-family: "Consolas";
+    -fx-font-weight: bold;
+}
+
+.quiz-answer-button {
+    -fx-min-width: 240;
+    -fx-background-color: #0f3460;
+    -fx-text-fill: #eaeaea;
+    -fx-font-size: 14px;
+    -fx-font-family: "Consolas";
+    -fx-background-radius: 6;
+    -fx-padding: 10 16 10 16;
+}
+
+.quiz-answer-button:hover {
+    -fx-background-color: #1f5b96;
+}
+
 /* --- Dialogue box (bottom) --- */
 
 .dialogue-container {

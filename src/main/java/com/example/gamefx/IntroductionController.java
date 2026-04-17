@@ -3,11 +3,13 @@ package com.example.gamefx;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 import java.util.List;
@@ -20,8 +22,17 @@ public class IntroductionController {
     @FXML private Label dialogueLabel;
     @FXML private Label continueLabel;
     @FXML private ImageView characterImage;
+    @FXML private VBox quizContainer;
+    @FXML private Label quizQuestionLabel;
+    @FXML private Button answerRougeButton;
+    @FXML private Button answerBlancButton;
+    @FXML private Button answerNoirButton;
+    @FXML private Button answerKakiButton;
 
     private static final Duration CHAR_DELAY = Duration.millis(30);
+    private static final String QUIZ_QUESTION =
+            "De qu'elle couleur est le cheval blanc d'Henry IV ?";
+    private static final String CORRECT_ANSWER = "Blanc";
 
     private final List<DialogueLine> dialogues = List.of(
         new DialogueLine("Chef",
@@ -48,10 +59,14 @@ public class IntroductionController {
     private Timeline typewriterTimeline;
     private boolean isTyping = false;
     private String currentFullText = "";
+    private boolean quizActive = false;
+    private boolean missionReady = false;
+    private boolean gameStarted = false;
 
     @FXML
     public void initialize() {
         loadCharacterImage();
+        initializeQuiz();
         continueLabel.setVisible(false);
 
         rootPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
@@ -66,6 +81,12 @@ public class IntroductionController {
         });
 
         showDialogue(currentIndex);
+    }
+
+    private void initializeQuiz() {
+        quizQuestionLabel.setText(QUIZ_QUESTION);
+        quizContainer.setVisible(false);
+        quizContainer.setManaged(false);
     }
 
     private void loadCharacterImage() {
@@ -95,6 +116,16 @@ public class IntroductionController {
     }
 
     private void handleSpace() {
+        if (gameStarted) {
+            return;
+        }
+        if (missionReady) {
+            startGame();
+            return;
+        }
+        if (quizActive) {
+            return;
+        }
         if (isTyping) {
             skipTypewriter();
         } else {
@@ -139,19 +170,71 @@ public class IntroductionController {
     }
 
     private void onDialoguesFinished() {
+        stopTypewriter();
+        isTyping = false;
+        quizActive = true;
         speakerLabel.setText("");
-        dialogueLabel.setText("Bonne chance, agent...");
+        dialogueLabel.setText("");
+        continueLabel.setVisible(false);
+        setQuizVisible(true);
+        setAnswerButtonsDisabled(false);
+    }
+
+    @FXML
+    private void onRougeAnswer() {
+        handleQuizAnswer("Rouge");
+    }
+
+    @FXML
+    private void onBlancAnswer() {
+        handleQuizAnswer("Blanc");
+    }
+
+    @FXML
+    private void onNoirAnswer() {
+        handleQuizAnswer("Noir");
+    }
+
+    @FXML
+    private void onKakiAnswer() {
+        handleQuizAnswer("Kaki");
+    }
+
+    private void handleQuizAnswer(String selectedAnswer) {
+        if (!quizActive) {
+            return;
+        }
+
+        quizActive = false;
+        missionReady = true;
+        setAnswerButtonsDisabled(true);
+        setQuizVisible(false);
+
+        speakerLabel.setText("Chef :");
+        if (CORRECT_ANSWER.equals(selectedAnswer)) {
+            dialogueLabel.setText("Exact. Bonne réponse, agent.");
+        } else {
+            dialogueLabel.setText("Raté. La bonne réponse était \"Blanc\".");
+        }
         continueLabel.setText("Appuyez sur ESPACE pour commencer la mission...");
         continueLabel.setVisible(true);
+    }
 
-        rootPane.getScene().setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.SPACE) {
-                startGame();
-            }
-        });
+    private void setQuizVisible(boolean visible) {
+        quizContainer.setVisible(visible);
+        quizContainer.setManaged(visible);
+    }
+
+    private void setAnswerButtonsDisabled(boolean disabled) {
+        answerRougeButton.setDisable(disabled);
+        answerBlancButton.setDisable(disabled);
+        answerNoirButton.setDisable(disabled);
+        answerKakiButton.setDisable(disabled);
     }
 
     private void startGame() {
+        gameStarted = true;
+        missionReady = false;
         System.out.println("Lancement du jeu !");
     }
 

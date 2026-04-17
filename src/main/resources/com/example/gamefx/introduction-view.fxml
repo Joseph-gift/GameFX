@@ -2,12 +2,12 @@
 
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.geometry.Insets?>
 
 <StackPane xmlns:fx="http://javafx.com/fxml"
            fx:id="rootPane"
@@ -19,8 +19,37 @@
     <BorderPane>
 
         <center>
-            <VBox alignment="CENTER" styleClass="background-area">
+            <VBox alignment="TOP_CENTER" spacing="28" styleClass="background-area">
                 <Label text="BRIEFING" styleClass="title-label"/>
+                <VBox fx:id="quizContainer"
+                      alignment="TOP_CENTER"
+                      spacing="12"
+                      styleClass="quiz-container"
+                      visible="false"
+                      managed="false">
+                    <Label fx:id="quizQuestionLabel"
+                           styleClass="quiz-question-label"
+                           wrapText="true"
+                           maxWidth="720"/>
+                    <VBox alignment="TOP_CENTER" spacing="10">
+                        <Button fx:id="answerRougeButton"
+                                text="Rouge"
+                                styleClass="quiz-answer-button"
+                                onAction="#onRougeAnswer"/>
+                        <Button fx:id="answerBlancButton"
+                                text="Blanc"
+                                styleClass="quiz-answer-button"
+                                onAction="#onBlancAnswer"/>
+                        <Button fx:id="answerNoirButton"
+                                text="Noir"
+                                styleClass="quiz-answer-button"
+                                onAction="#onNoirAnswer"/>
+                        <Button fx:id="answerKakiButton"
+                                text="Kaki"
+                                styleClass="quiz-answer-button"
+                                onAction="#onKakiAnswer"/>
+                    </VBox>
+                </VBox>
             </VBox>
         </center>
 
