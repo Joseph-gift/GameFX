@@ -1,7 +1,12 @@
 package com.example.gamefx;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -13,8 +18,18 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.net.URI;
+import java.net.URLDecoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 public class IntroductionController {
 
@@ -32,9 +47,9 @@ public class IntroductionController {
     @FXML private Button answerKakiButton;
 
     private static final Duration CHAR_DELAY = Duration.millis(30);
-    private static final String QUIZ_QUESTION =
-            "De qu'elle couleur est le cheval blanc d'Henry IV ?";
-    private static final String CORRECT_ANSWER = "Blanc";
+    private static final int QUIZ_QUESTION_COUNT = 10;
+    private static final String TRIVIA_API_URL =
+            "https://opentdb.com/api.php?amount=50&type=multiple&encode=url3986";
 
     private final List<DialogueLine> dialogues = List.of(
         new DialogueLine("Chef",
@@ -64,6 +79,12 @@ public class IntroductionController {
     private boolean quizActive = false;
     private boolean missionReady = false;
     private boolean gameStarted = false;
+    private int currentQuestionIndex = 0;
+    private int correctAnswersCount = 0;
+    private List<QuizQuestion> quizQuestions = List.of();
+    private String quizLoadErrorMessage;
+
+    private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @FXML
     public void initialize() {
@@ -83,13 +104,114 @@ public class IntroductionController {
             }
         });
 
+        preloadQuizQuestionsAsync();
         showDialogue(currentIndex);
     }
 
     private void initializeQuiz() {
-        quizQuestionLabel.setText(QUIZ_QUESTION);
+        quizQuestionLabel.setText("Chargement des questions...");
         quizContainer.setVisible(false);
         quizContainer.setManaged(false);
+        setAnswerButtonsDisabled(true);
+    }
+
+    private void preloadQuizQuestionsAsync() {
+        CompletableFuture
+                .supplyAsync(this::fetchRandomQuizQuestions)
+                .whenComplete((questions, throwable) -> Platform.runLater(() -> {
+                    if (throwable != null) {
+                        onQuizLoadFailed(throwable);
+                        return;
+                    }
+
+                    quizQuestions = questions;
+                    currentQuestionIndex = 0;
+                    correctAnswersCount = 0;
+
+                    if (quizActive) {
+                        showCurrentQuizQuestion();
+                    }
+                }));
+    }
+
+    private void onQuizLoadFailed(Throwable throwable) {
+        Throwable cause = throwable;
+        if (throwable instanceof CompletionException completionException
+                && completionException.getCause() != null) {
+            cause = completionException.getCause();
+        }
+
+        quizLoadErrorMessage = "Impossible de charger les questions du quiz depuis l'API.";
+        quizQuestionLabel.setText(quizLoadErrorMessage);
+        setAnswerButtonsDisabled(true);
+        System.err.println("Erreur chargement quiz : " + cause.getMessage());
+
+        if (quizActive) {
+            setQuizVisible(true);
+            continueLabel.setVisible(false);
+            setQuitButtonVisible(true);
+        }
+    }
+
+    private List<QuizQuestion> fetchRandomQuizQuestions() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(TRIVIA_API_URL))
+                    .timeout(java.time.Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new IllegalStateException("Statut HTTP inattendu : " + response.statusCode());
+            }
+
+            JsonObject payload = JsonParser.parseString(response.body()).getAsJsonObject();
+            int responseCode = payload.get("response_code").getAsInt();
+            if (responseCode != 0) {
+                throw new IllegalStateException("L'API OpenTDB a répondu avec le code : " + responseCode);
+            }
+
+            JsonArray results = payload.getAsJsonArray("results");
+            List<QuizQuestion> parsedQuestions = new ArrayList<>();
+            for (JsonElement resultElement : results) {
+                JsonObject result = resultElement.getAsJsonObject();
+                if (!"multiple".equals(result.get("type").getAsString())) {
+                    continue;
+                }
+
+                String question = decodeTriviaText(result.get("question").getAsString());
+                String correctAnswer = decodeTriviaText(result.get("correct_answer").getAsString());
+
+                JsonArray incorrectAnswersRaw = result.getAsJsonArray("incorrect_answers");
+                if (incorrectAnswersRaw.size() != 3) {
+                    continue;
+                }
+
+                List<String> answers = new ArrayList<>();
+                answers.add(correctAnswer);
+                for (JsonElement incorrectAnswer : incorrectAnswersRaw) {
+                    answers.add(decodeTriviaText(incorrectAnswer.getAsString()));
+                }
+                Collections.shuffle(answers);
+
+                parsedQuestions.add(new QuizQuestion(question, correctAnswer, List.copyOf(answers)));
+            }
+
+            if (parsedQuestions.size() < QUIZ_QUESTION_COUNT) {
+                throw new IllegalStateException(
+                        "Pas assez de questions reçues : " + parsedQuestions.size() + " < " + QUIZ_QUESTION_COUNT);
+            }
+
+            Collections.shuffle(parsedQuestions);
+            return List.copyOf(parsedQuestions.subList(0, QUIZ_QUESTION_COUNT));
+        } catch (Exception e) {
+            throw new IllegalStateException("Impossible de récupérer le quiz OpenTDB", e);
+        }
+    }
+
+    private String decodeTriviaText(String encodedText) {
+        return URLDecoder.decode(encodedText, StandardCharsets.UTF_8);
     }
 
     private void loadCharacterImage() {
@@ -176,50 +298,91 @@ public class IntroductionController {
         stopTypewriter();
         isTyping = false;
         quizActive = true;
-        speakerLabel.setText("");
-        dialogueLabel.setText("");
+        speakerLabel.setText("Chef :");
+        dialogueLabel.setText("Dernier contrôle avant la mission.");
         continueLabel.setVisible(false);
         setQuitButtonVisible(false);
         setQuizVisible(true);
-        setAnswerButtonsDisabled(false);
+
+        if (quizLoadErrorMessage != null) {
+            quizQuestionLabel.setText(quizLoadErrorMessage);
+            setAnswerButtonsDisabled(true);
+            setQuitButtonVisible(true);
+            return;
+        }
+
+        if (quizQuestions.isEmpty()) {
+            quizQuestionLabel.setText("Chargement des questions...");
+            setAnswerButtonsDisabled(true);
+            return;
+        }
+
+        showCurrentQuizQuestion();
     }
 
     @FXML
     private void onRougeAnswer() {
-        handleQuizAnswer("Rouge");
+        handleQuizAnswer(answerRougeButton.getText());
     }
 
     @FXML
     private void onBlancAnswer() {
-        handleQuizAnswer("Blanc");
+        handleQuizAnswer(answerBlancButton.getText());
     }
 
     @FXML
     private void onNoirAnswer() {
-        handleQuizAnswer("Noir");
+        handleQuizAnswer(answerNoirButton.getText());
     }
 
     @FXML
     private void onKakiAnswer() {
-        handleQuizAnswer("Kaki");
+        handleQuizAnswer(answerKakiButton.getText());
     }
 
     private void handleQuizAnswer(String selectedAnswer) {
-        if (!quizActive) {
+        if (!quizActive || quizQuestions.isEmpty()) {
             return;
         }
 
+        QuizQuestion currentQuestion = quizQuestions.get(currentQuestionIndex);
+        if (currentQuestion.correctAnswer().equals(selectedAnswer)) {
+            correctAnswersCount++;
+        }
+
+        currentQuestionIndex++;
+        if (currentQuestionIndex < quizQuestions.size()) {
+            showCurrentQuizQuestion();
+            return;
+        }
+
+        finishQuiz();
+    }
+
+    private void showCurrentQuizQuestion() {
+        QuizQuestion question = quizQuestions.get(currentQuestionIndex);
+        List<String> answers = question.answers();
+        if (answers.size() != 4) {
+            throw new IllegalStateException("Chaque question doit avoir exactement 4 réponses.");
+        }
+
+        quizQuestionLabel.setText(
+                "Question " + (currentQuestionIndex + 1) + "/" + quizQuestions.size() + "\n" + question.question());
+        answerRougeButton.setText(answers.get(0));
+        answerBlancButton.setText(answers.get(1));
+        answerNoirButton.setText(answers.get(2));
+        answerKakiButton.setText(answers.get(3));
+        setAnswerButtonsDisabled(false);
+    }
+
+    private void finishQuiz() {
         quizActive = false;
         missionReady = true;
         setAnswerButtonsDisabled(true);
         setQuizVisible(false);
 
         speakerLabel.setText("Chef :");
-        if (CORRECT_ANSWER.equals(selectedAnswer)) {
-            dialogueLabel.setText("Exact. Bonne réponse, agent.");
-        } else {
-            dialogueLabel.setText("Raté. La bonne réponse était \"Blanc\".");
-        }
+        dialogueLabel.setText("Quiz terminé. Score : " + correctAnswersCount + "/" + quizQuestions.size() + ".");
         continueLabel.setText("Appuyez sur ESPACE pour commencer la mission...");
         continueLabel.setVisible(true);
         setQuitButtonVisible(true);
@@ -257,4 +420,5 @@ public class IntroductionController {
     }
 
     private record DialogueLine(String speaker, String text) {}
+    private record QuizQuestion(String question, String correctAnswer, List<String> answers) {}
 }
