@@ -44,6 +44,52 @@
     -fx-background-color: #1f5b96;
 }
 
+.quiz-answer-correct {
+    -fx-background-color: #2e7d32;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.quiz-answer-correct:hover {
+    -fx-background-color: #2e7d32;
+}
+
+.quiz-answer-incorrect {
+    -fx-background-color: #c62828;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.quiz-answer-incorrect:hover {
+    -fx-background-color: #c62828;
+}
+
+.quiz-answer-disabled {
+    -fx-background-color: #1a2744;
+    -fx-text-fill: #666688;
+    -fx-opacity: 0.6;
+}
+
+.quiz-feedback-correct {
+    -fx-text-fill: #4caf50;
+    -fx-font-size: 16px;
+    -fx-font-family: "Consolas";
+    -fx-font-weight: bold;
+}
+
+.quiz-feedback-incorrect {
+    -fx-text-fill: #ef5350;
+    -fx-font-size: 16px;
+    -fx-font-family: "Consolas";
+    -fx-font-weight: bold;
+}
+
+.quiz-score-label {
+    -fx-text-fill: #aaaacc;
+    -fx-font-size: 13px;
+    -fx-font-family: "Consolas";
+}
+
 /* --- Dialogue box (bottom) --- */
 
 .dialogue-container {

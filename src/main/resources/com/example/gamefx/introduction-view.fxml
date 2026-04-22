@@ -31,6 +31,9 @@
                            styleClass="quiz-question-label"
                            wrapText="true"
                            maxWidth="720"/>
+                    <Label fx:id="quizScoreLabel"
+                           styleClass="quiz-score-label"
+                           text=""/>
                     <VBox alignment="TOP_CENTER" spacing="10">
                         <Button fx:id="answerRougeButton"
                                 text="Rouge"
@@ -49,6 +52,7 @@
                                 styleClass="quiz-answer-button"
                                 onAction="#onKakiAnswer"/>
                     </VBox>
+                    <Label fx:id="quizFeedbackLabel" text="" wrapText="true"/>
                 </VBox>
             </VBox>
         </center>

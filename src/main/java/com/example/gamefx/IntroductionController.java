@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -41,12 +42,15 @@ public class IntroductionController {
     @FXML private ImageView characterImage;
     @FXML private VBox quizContainer;
     @FXML private Label quizQuestionLabel;
+    @FXML private Label quizScoreLabel;
+    @FXML private Label quizFeedbackLabel;
     @FXML private Button answerRougeButton;
     @FXML private Button answerBlancButton;
     @FXML private Button answerNoirButton;
     @FXML private Button answerKakiButton;
 
     private static final Duration CHAR_DELAY = Duration.millis(30);
+    private static final Duration FEEDBACK_DELAY = Duration.millis(1500);
     private static final int QUIZ_QUESTION_COUNT = 10;
     private static final String TRIVIA_API_URL =
             "https://opentdb.com/api.php?amount=50&type=multiple&encode=url3986";
@@ -345,18 +349,67 @@ public class IntroductionController {
             return;
         }
 
+        setAnswerButtonsDisabled(true);
+
         QuizQuestion currentQuestion = quizQuestions.get(currentQuestionIndex);
-        if (currentQuestion.correctAnswer().equals(selectedAnswer)) {
+        boolean isCorrect = currentQuestion.correctAnswer().equals(selectedAnswer);
+
+        if (isCorrect) {
             correctAnswersCount++;
         }
 
-        currentQuestionIndex++;
-        if (currentQuestionIndex < quizQuestions.size()) {
-            showCurrentQuizQuestion();
-            return;
+        highlightAnswers(currentQuestion.correctAnswer(), selectedAnswer, isCorrect);
+        updateScoreLabel();
+
+        PauseTransition pause = new PauseTransition(FEEDBACK_DELAY);
+        pause.setOnFinished(e -> {
+            clearAnswerStyles();
+            quizFeedbackLabel.setText("");
+
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizQuestions.size()) {
+                showCurrentQuizQuestion();
+            } else {
+                finishQuiz();
+            }
+        });
+        pause.play();
+    }
+
+    private void highlightAnswers(String correctAnswer, String selectedAnswer, boolean isCorrect) {
+        List<Button> buttons = List.of(answerRougeButton, answerBlancButton, answerNoirButton, answerKakiButton);
+
+        for (Button btn : buttons) {
+            btn.getStyleClass().removeAll("quiz-answer-correct", "quiz-answer-incorrect", "quiz-answer-disabled");
+
+            if (btn.getText().equals(correctAnswer)) {
+                btn.getStyleClass().add("quiz-answer-correct");
+            } else if (btn.getText().equals(selectedAnswer)) {
+                btn.getStyleClass().add("quiz-answer-incorrect");
+            } else {
+                btn.getStyleClass().add("quiz-answer-disabled");
+            }
         }
 
-        finishQuiz();
+        quizFeedbackLabel.getStyleClass().removeAll("quiz-feedback-correct", "quiz-feedback-incorrect");
+        if (isCorrect) {
+            quizFeedbackLabel.setText("Bonne réponse !");
+            quizFeedbackLabel.getStyleClass().add("quiz-feedback-correct");
+        } else {
+            quizFeedbackLabel.setText("Mauvaise réponse. La bonne réponse était : " + correctAnswer);
+            quizFeedbackLabel.getStyleClass().add("quiz-feedback-incorrect");
+        }
+    }
+
+    private void clearAnswerStyles() {
+        List<Button> buttons = List.of(answerRougeButton, answerBlancButton, answerNoirButton, answerKakiButton);
+        for (Button btn : buttons) {
+            btn.getStyleClass().removeAll("quiz-answer-correct", "quiz-answer-incorrect", "quiz-answer-disabled");
+        }
+    }
+
+    private void updateScoreLabel() {
+        quizScoreLabel.setText("Score : " + correctAnswersCount + "/" + (currentQuestionIndex + 1));
     }
 
     private void showCurrentQuizQuestion() {
@@ -366,12 +419,18 @@ public class IntroductionController {
             throw new IllegalStateException("Chaque question doit avoir exactement 4 réponses.");
         }
 
+        clearAnswerStyles();
+        quizFeedbackLabel.setText("");
+
         String questionText = question.question() == null ? "" : question.question().trim();
         if (questionText.isEmpty()) {
             questionText = "(Question API indisponible)";
         }
         quizQuestionLabel.setText(
                 "Question " + (currentQuestionIndex + 1) + "/" + quizQuestions.size() + " : " + questionText);
+        quizScoreLabel.setText(currentQuestionIndex > 0
+                ? "Score : " + correctAnswersCount + "/" + currentQuestionIndex
+                : "");
         answerRougeButton.setText(answers.get(0));
         answerBlancButton.setText(answers.get(1));
         answerNoirButton.setText(answers.get(2));
