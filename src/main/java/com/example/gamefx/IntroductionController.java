@@ -366,8 +366,12 @@ public class IntroductionController {
             throw new IllegalStateException("Chaque question doit avoir exactement 4 réponses.");
         }
 
+        String questionText = question.question() == null ? "" : question.question().trim();
+        if (questionText.isEmpty()) {
+            questionText = "(Question API indisponible)";
+        }
         quizQuestionLabel.setText(
-                "Question " + (currentQuestionIndex + 1) + "/" + quizQuestions.size() + "\n" + question.question());
+                "Question " + (currentQuestionIndex + 1) + "/" + quizQuestions.size() + " : " + questionText);
         answerRougeButton.setText(answers.get(0));
         answerBlancButton.setText(answers.get(1));
         answerNoirButton.setText(answers.get(2));
