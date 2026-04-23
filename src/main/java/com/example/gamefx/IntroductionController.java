@@ -52,8 +52,28 @@ public class IntroductionController {
     private static final Duration CHAR_DELAY = Duration.millis(30);
     private static final Duration FEEDBACK_DELAY = Duration.millis(1500);
     private static final int QUIZ_QUESTION_COUNT = 10;
+    private static final int REQUIRED_CORRECT_ANSWERS = 5;
     private static final String TRIVIA_API_URL =
             "https://opentdb.com/api.php?amount=50&type=multiple&encode=url3986";
+
+    private final List<DialogueLine> endingDialoguesSuccess = List.of(
+        new DialogueLine("Chef",
+            "Impressionnant, agent ! Tu as prouvé que tu avais les capacités "
+            + "nécessaires. Grâce à tes réponses, nous avons pu localiser la bombe."),
+        new DialogueLine("Chef",
+            "L'équipe de désamorçage est en route. Tu as sauvé la ville aujourd'hui. "
+            + "Chaque bonne réponse nous a rapprochés de la solution, et tu n'as pas "
+            + "faibli sous la pression."),
+        new DialogueLine("Chef",
+            "Mission accomplie. Tu peux être fier de toi, agent. La ville te doit une "
+            + "fière chandelle. Repose-toi, tu l'as bien mérité.")
+    );
+
+    private int totalQuestionsAnswered = 0;
+
+    private List<DialogueLine> currentEndingDialogues = List.of();
+    private int endingDialogueIndex = 0;
+    private boolean inEndingDialogue = false;
 
     private final List<DialogueLine> dialogues = List.of(
         new DialogueLine("Chef",
@@ -131,6 +151,7 @@ public class IntroductionController {
                     quizQuestions = questions;
                     currentQuestionIndex = 0;
                     correctAnswersCount = 0;
+                    totalQuestionsAnswered = 0;
 
                     if (quizActive) {
                         showCurrentQuizQuestion();
@@ -255,6 +276,14 @@ public class IntroductionController {
         if (quizActive) {
             return;
         }
+        if (inEndingDialogue) {
+            if (isTyping) {
+                skipTypewriter();
+            } else {
+                advanceEndingDialogue();
+            }
+            return;
+        }
         if (isTyping) {
             skipTypewriter();
         } else {
@@ -357,6 +386,7 @@ public class IntroductionController {
         if (isCorrect) {
             correctAnswersCount++;
         }
+        totalQuestionsAnswered++;
 
         highlightAnswers(currentQuestion.correctAnswer(), selectedAnswer, isCorrect);
         updateScoreLabel();
@@ -366,11 +396,16 @@ public class IntroductionController {
             clearAnswerStyles();
             quizFeedbackLabel.setText("");
 
+            if (correctAnswersCount >= REQUIRED_CORRECT_ANSWERS) {
+                finishQuiz(true);
+                return;
+            }
+
             currentQuestionIndex++;
             if (currentQuestionIndex < quizQuestions.size()) {
                 showCurrentQuizQuestion();
             } else {
-                finishQuiz();
+                reloadQuizQuestions();
             }
         });
         pause.play();
@@ -409,7 +444,8 @@ public class IntroductionController {
     }
 
     private void updateScoreLabel() {
-        quizScoreLabel.setText("Score : " + correctAnswersCount + "/" + (currentQuestionIndex + 1));
+        quizScoreLabel.setText("Score : " + correctAnswersCount + "/" + REQUIRED_CORRECT_ANSWERS
+                + " (" + totalQuestionsAnswered + " questions répondues)");
     }
 
     private void showCurrentQuizQuestion() {
@@ -428,9 +464,10 @@ public class IntroductionController {
         }
         quizQuestionLabel.setText(
                 "Question " + (currentQuestionIndex + 1) + "/" + quizQuestions.size() + " : " + questionText);
-        quizScoreLabel.setText(currentQuestionIndex > 0
-                ? "Score : " + correctAnswersCount + "/" + currentQuestionIndex
-                : "");
+        quizScoreLabel.setText(totalQuestionsAnswered > 0
+                ? "Score : " + correctAnswersCount + "/" + REQUIRED_CORRECT_ANSWERS
+                  + " (" + totalQuestionsAnswered + " questions répondues)"
+                : "Objectif : " + REQUIRED_CORRECT_ANSWERS + " bonnes réponses");
         answerRougeButton.setText(answers.get(0));
         answerBlancButton.setText(answers.get(1));
         answerNoirButton.setText(answers.get(2));
@@ -438,17 +475,43 @@ public class IntroductionController {
         setAnswerButtonsDisabled(false);
     }
 
-    private void finishQuiz() {
+    private void finishQuiz(boolean success) {
         quizActive = false;
-        missionReady = true;
         setAnswerButtonsDisabled(true);
         setQuizVisible(false);
 
+        currentEndingDialogues = endingDialoguesSuccess;
+        endingDialogueIndex = 0;
+        inEndingDialogue = true;
+
         speakerLabel.setText("Chef :");
-        dialogueLabel.setText("Quiz terminé. Score : " + correctAnswersCount + "/" + quizQuestions.size() + ".");
-        continueLabel.setText("Appuyez sur ESPACE pour commencer la mission...");
+        dialogueLabel.setText("Excellent ! " + REQUIRED_CORRECT_ANSWERS + " bonnes réponses atteintes ! "
+                + "(Score : " + correctAnswersCount + "/" + totalQuestionsAnswered + ")");
+        continueLabel.setText("Appuyez sur ESPACE pour continuer...");
         continueLabel.setVisible(true);
-        setQuitButtonVisible(true);
+    }
+
+    private void reloadQuizQuestions() {
+        setAnswerButtonsDisabled(true);
+        quizQuestionLabel.setText("Chargement de nouvelles questions...");
+        quizScoreLabel.setText("Score : " + correctAnswersCount + "/" + REQUIRED_CORRECT_ANSWERS
+                + " — Continue, tu y es presque !");
+
+        CompletableFuture
+                .supplyAsync(this::fetchRandomQuizQuestions)
+                .whenComplete((questions, throwable) -> Platform.runLater(() -> {
+                    if (throwable != null) {
+                        quizQuestionLabel.setText("Erreur de chargement. Nouvelle tentative...");
+                        PauseTransition retry = new PauseTransition(Duration.millis(2000));
+                        retry.setOnFinished(e -> reloadQuizQuestions());
+                        retry.play();
+                        return;
+                    }
+
+                    quizQuestions = questions;
+                    currentQuestionIndex = 0;
+                    showCurrentQuizQuestion();
+                }));
     }
 
     @FXML
@@ -473,6 +536,26 @@ public class IntroductionController {
     private void setQuitButtonVisible(boolean visible) {
         quitButton.setVisible(visible);
         quitButton.setManaged(visible);
+    }
+
+    private void advanceEndingDialogue() {
+        if (endingDialogueIndex < currentEndingDialogues.size()) {
+            DialogueLine line = currentEndingDialogues.get(endingDialogueIndex);
+            speakerLabel.setText(line.speaker() + " :");
+            currentFullText = line.text();
+            dialogueLabel.setText("");
+            continueLabel.setVisible(false);
+            startTypewriter(currentFullText);
+            endingDialogueIndex++;
+        } else {
+            inEndingDialogue = false;
+            missionReady = true;
+            speakerLabel.setText("");
+            dialogueLabel.setText("");
+            continueLabel.setText("Appuyez sur ESPACE pour terminer...");
+            continueLabel.setVisible(true);
+            setQuitButtonVisible(true);
+        }
     }
 
     private void startGame() {
