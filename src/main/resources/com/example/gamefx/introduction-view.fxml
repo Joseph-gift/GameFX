@@ -30,7 +30,8 @@
                     <Label fx:id="quizQuestionLabel"
                            styleClass="quiz-question-label"
                            wrapText="true"
-                           maxWidth="720"/>
+                           maxWidth="780"
+                           minHeight="-Infinity"/>
                     <Label fx:id="quizScoreLabel"
                            styleClass="quiz-score-label"
                            text=""/>
@@ -38,21 +39,25 @@
                         <Button fx:id="answerRougeButton"
                                 text="Rouge"
                                 styleClass="quiz-answer-button"
+                                wrapText="true" maxWidth="700"
                                 onAction="#onRougeAnswer"/>
                         <Button fx:id="answerBlancButton"
                                 text="Blanc"
                                 styleClass="quiz-answer-button"
+                                wrapText="true" maxWidth="700"
                                 onAction="#onBlancAnswer"/>
                         <Button fx:id="answerNoirButton"
                                 text="Noir"
                                 styleClass="quiz-answer-button"
+                                wrapText="true" maxWidth="700"
                                 onAction="#onNoirAnswer"/>
                         <Button fx:id="answerKakiButton"
                                 text="Kaki"
                                 styleClass="quiz-answer-button"
+                                wrapText="true" maxWidth="700"
                                 onAction="#onKakiAnswer"/>
                     </VBox>
-                    <Label fx:id="quizFeedbackLabel" text="" wrapText="true"/>
+                    <Label fx:id="quizFeedbackLabel" text="" wrapText="true" maxWidth="780"/>
                 </VBox>
             </VBox>
         </center>

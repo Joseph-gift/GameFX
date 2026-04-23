@@ -25,19 +25,24 @@
 
 .quiz-question-label {
     -fx-text-fill: #eaeaea;
-    -fx-font-size: 18px;
+    -fx-font-size: 16px;
     -fx-font-family: "Consolas";
     -fx-font-weight: bold;
+    -fx-wrap-text: true;
 }
 
 .quiz-answer-button {
     -fx-min-width: 240;
+    -fx-pref-width: 600;
+    -fx-max-width: 700;
     -fx-background-color: #0f3460;
     -fx-text-fill: #eaeaea;
     -fx-font-size: 14px;
     -fx-font-family: "Consolas";
     -fx-background-radius: 6;
     -fx-padding: 10 16 10 16;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
 .quiz-answer-button:hover {
